@@ -154,12 +154,5 @@ The full pre-generated audio of every (s, α, seed) configuration is in `plots/d
 - Training runs on the DI Sapienza SLURM cluster (RTX 6000, 29-min jobs, Singularity container, auto-resume)
 - Raw NSynth filtered to 4 families (guitar, keyboard, string, brass), MIDI pitch [48, 84], 61,531 samples, mel (1,128,256), global normalization to [-1,1]
 
----
-
-## Reproducibility
-
-- Python 3.12, PyTorch, `torchcrepe` (PyTorch port), HiFi-GAN / Griffin-Lim for audio, see `pyproject.toml` and `requirements.txt`
-- Training runs on the DI Sapienza SLURM cluster (RTX 6000, 29-min jobs, Singularity container, auto-resume)
-- Raw NSynth filtered to 4 families (guitar, keyboard, string, brass), MIDI pitch [48, 84], 61,531 samples, mel (1,128,256), global normalization to [-1,1]
 
 ---
