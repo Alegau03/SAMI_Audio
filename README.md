@@ -1,5 +1,5 @@
 # SAMI-Audio
-
+## Antonio Pietro Romito 1932500 & Gautieri Alessandro 2041850 
 **Score-based Autoencoders for Multiscale Inference (SAMI) applied to the unsupervised representation of musical instrument notes.**
 
 An audio-domain port of SAMI (Lyo, Simoncelli & Savin, 2025) on NSynth (Engel et al., 2017): a variational encoder learns a latent space where **pitch** and **timbre** are separable and manipulable, with no supervision on the factors. The "decoder" is not a separate network but the denoiser of a diffusion model, guided from the latent through a score gradient.
