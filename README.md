@@ -16,7 +16,7 @@ An audio-domain port of SAMI (Lyo, Simoncelli & Savin, 2025) on NSynth (Engel et
 | Timbre (decodability) | **accuracy = 0.91** | k-NN on μ, chance baseline 25% |
 | Pitch/timbre separability | **cos(w_pitch, w_family) = 0.15** | orthogonal (random baseline 3σ = 0.53) |
 | Timbre transfer | **3/7 seeds** with full transfer | s=5, α=0.3 (honest outcome, fully documented) |
-| Posterior collapse | **Solved with free bits** | raw KL alive (31 nats at D=128) |
+| Posterior collapse | **Solved with free bits** | raw KL alive (~40 nats, D=32 final model) |
 
 **Artifacts in this repository:**
 - Figure of the report: `plots/finals/` (7 figures)
@@ -91,7 +91,8 @@ The sounds generated in the final demo are in **`plots/demo/`** — one WAV per 
 
 Full configurations (s∈{3,5,7} × α∈{0.3,0.5,0.7,1.0}, 8 seeds each) are organized by prefix `s{scale}_a{alpha}_seed{seed}_{A,B,T}.wav`.
 
-**Report figure** (A\|T\|B spectrograms of the three cases): `plots/finals/fig6_transfer_demo.png`.
+**Report figure** 
+See `plots/demo/` for the A/T/B audio of each case.
 
 ---
 
