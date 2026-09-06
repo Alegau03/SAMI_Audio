@@ -79,3 +79,4 @@ archive/
 # Documentation — il README è autoconclusivo, il dettaglio è nel report PDF
 docs/
 papers/
+*.npy
