@@ -1,9 +1,10 @@
 # SAMI-Audio
 
 **Porting SAMI (Score-based Autoencoder for Multiscale Inference) from images to audio.**
-Antonio Pietro Romito (1932500) & Alessandro Gautieri (2041850) — Deep Learning & Applied AI 2025/26, Sapienza.
+## Antonio Pietro Romito (1932500) & Alessandro Gautieri (2041850) — Deep Learning & Applied AI 2025/26, Sapienza.
 
-We take SAMI (Lyo, Simoncelli & Savin, 2025) and apply it to instrumental notes from NSynth (Engel et al., 2017). The goal: learn a latent space that separates **pitch** from **timbre** *without any supervision on those factors*. The twist of SAMI — and the reason we chose it — is that there is **no decoder network**: the "decoder" is a frozen diffusion denoiser, and the encoder influences generation only through a guidance gradient. Disentanglement is meant to emerge from that score mechanism, not from a reconstruction bottleneck.
+We take SAMI (Lyo, Simoncelli & Savin, 2025) and apply it to instrumental notes from NSynth (Engel et al., 2017).  
+The goal: learn a latent space that separates **pitch** from **timbre** *without any supervision on those factors*. The twist of SAMI, and the reason we chose it, is that there is **no decoder network**: the "decoder" is a frozen diffusion denoiser, and the encoder influences generation only through a guidance gradient. Disentanglement is meant to emerge from that score mechanism, not from a reconstruction bottleneck.
 
 This repo is the code and the artifacts behind our report; the report itself has the full story and the numbers.
 
