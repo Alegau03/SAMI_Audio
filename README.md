@@ -1,27 +1,39 @@
 # SAMI-Audio
-## Antonio Pietro Romito 1932500 & Gautieri Alessandro 2041850 
-**Score-based Autoencoders for Multiscale Inference (SAMI) applied to the unsupervised representation of musical instrument notes.**
 
-An audio-domain port of SAMI (Lyo, Simoncelli & Savin, 2025) on NSynth (Engel et al., 2017): a variational encoder learns a latent space where **pitch** and **timbre** are separable and manipulable, with no supervision on the factors. The "decoder" is not a separate network but the denoiser of a diffusion model, guided from the latent through a score gradient.
+**Porting SAMI (Score-based Autoencoder for Multiscale Inference) from images to audio.**
+Antonio Pietro Romito (1932500) & Alessandro Gautieri (2041850) — Deep Learning & Applied AI 2025/26, Sapienza.
 
-**Project — Deep Learning & Applied AI 2025/26, Sapienza University of Rome.**
+We take SAMI (Lyo, Simoncelli & Savin, 2025) and apply it to instrumental notes from NSynth (Engel et al., 2017). The goal: learn a latent space that separates **pitch** from **timbre** *without any supervision on those factors*. The twist of SAMI — and the reason we chose it — is that there is **no decoder network**: the "decoder" is a frozen diffusion denoiser, and the encoder influences generation only through a guidance gradient. Disentanglement is meant to emerge from that score mechanism, not from a reconstruction bottleneck.
+
+This repo is the code and the artifacts behind our report; the report itself has the full story and the numbers.
 
 ---
 
-## Key results
+## What we found (short version)
 
-| Metric | Value | Notes |
-|--------|-------|-------|
-| Pitch (decodability) | **R² = 0.60** | Ridge probe + train/test split + noise control |
-| Timbre (decodability) | **accuracy = 0.91** | k-NN on μ, chance baseline 25% |
-| Pitch/timbre separability | **cos(w_pitch, w_family) = 0.15** | orthogonal (random baseline 3σ = 0.53) |
-| Timbre transfer | **3/7 seeds** with full transfer | s=5, α=0.3 (honest outcome, fully documented) |
-| Posterior collapse | **Solved with free bits** | raw KL alive (~40 nats, D=32 final model) |
+All metrics below are on the **held-out NSynth test split** (instrument-disjoint from training), computed with the *same* probes on both SAMI and a β-VAE baseline retrained at D=32 for a fair comparison.
 
-**Artifacts in this repository:**
-- Figure of the report: `plots/finals/` (7 figures)
-- Demo audio: `plots/demo/` (147 WAV: original notes, transfer, controls)
-- Model checkpoints and full documentation live on the cluster (not pushed)
+- The latent **does** encode pitch and timbre linearly and without supervision: pitch is linearly decodable (R² ≈ 0.88), timbre is recovered by a k-NN at **0.97** (chance 25%), and the pitch/timbre directions come out essentially **orthogonal** (|cos| ≈ 0.03 vs. 0.28 for the β-VAE).
+- Against the β-VAE, SAMI wins on the *separation-oriented* metrics (timbre, MIG-family, orthogonality). The β-VAE scores higher only on the raw pitch probe — but that reflects **more redundant pitch information**, not better disentanglement (its MIG is lower).
+- The honest limit: **generative pitch control is weak**. In the frozen-denoiser regime the guidance often can't overcome the initial sampling noise, so the timbre-transfer demo succeeds on roughly half the seeds. We characterize *why* rather than hide it.
+
+The single most useful lesson of the project: **most of our early "failures" were the measuring instrument, not the model.** We found and fixed four measurement artifacts (an unregularized probe giving fake R², a collapse guard reading the wrong KL, a categorical factor scored with the wrong metric, an FFT-peak pitch estimator returning harmonics). A validated metric was the precondition for every correct decision.
+
+---
+
+## How it works (the mechanism)
+
+A classic VAE pushes the latent through a deterministic decoder in one shot, and a strong decoder learns to ignore the latent (posterior collapse). SAMI removes that decoder entirely:
+
+```
+ε̂(x_t, t, z) = ε_θ(x_t, t) − s · γ_t · g_t ,   g_t = ∇_{x_t} log q_φ(z | x_t)
+```
+
+The frozen denoiser `ε_θ` generates; the encoder's latent `z` only *bends* the denoising trajectory through the guidance gradient `g_t`, applied at every reverse-diffusion step. Because the gradient flows back into the encoder, this bending is also what *trains* the representation — a sampling technique turned into a learning signal.
+
+Two things made this actually work on audio, and both were non-obvious:
+- **Free bits.** Without them the posterior collapsed at every β. The KL has only two bad equilibria (degenerate at β=0, collapsed at β>0); giving each latent dimension a free KL budget (λ=0.5) creates the middle ground where the encoder can hold information.
+- **High-noise oversampling.** We measured that the guidance only has leverage at high noise levels (the latent barely affects low-noise denoising), so we sample timesteps from Beta(4,1) instead of uniformly, concentrating training where the encoder actually gets a signal.
 
 ---
 
@@ -30,130 +42,58 @@ An audio-domain port of SAMI (Lyo, Simoncelli & Savin, 2025) on NSynth (Engel et
 ```
 progetto-deep/
 ├── data/
-│   ├── nsynth.py             # Dataset, global normalization, mel_to_audio
-│   └── norm_stats.json       # Global normalization constants
+│   ├── nsynth.py             # NSynthDataset + CachedMelDataset, global norm, mel_to_audio
+│   └── norm_stats.json       # global normalization constants (fixed, reused at eval)
 ├── models/
-│   ├── encoder.py            # MelEncoder: Half-UNet → (μ, σ²)
-│   ├── unet.py               # MelUNet: 2D denoiser (the "decoder")
-│   ├── sami.py               # SAMI core: guidance, loss, sampling
+│   ├── encoder.py            # MelEncoder: Half-UNet → (μ, σ²), flatten (no global pool)
+│   ├── unet.py               # MelUNet: 2D denoiser (the frozen "decoder")
+│   ├── sami.py               # SAMI core: guidance gradient, loss, guided DDIM sampling
 │   ├── vae.py                # β-VAE baseline
-│   └── losses/               # DiffusionSchedule, KL, Mahalanobis
-├── scripts/                  # Active pipeline (training, demo, figures)
+│   └── losses/               # DiffusionSchedule, KL (+ free bits), Mahalanobis log-prob
+├── scripts/                  # training, precompute, metrics, demo, figures
 ├── plots/
-│   ├── finals/               # Report figures (7 PNG)
-│   └── demo/                 # Demo audio (147 WAV)
-├── train.py                  # Training (toy, disks, denoiser, SAMI)
-├── evaluate.py               # Metrics (MIG, R² probe, frechet_mel)
-├── interactive_demo.ipynb    # Interactive Notebook for demo
-├── pyproject.toml / requirements.txt / pdm.lock
+│   ├── finals/               # report figures
+│   └── demo/                 # timbre-transfer audio (per s, α, seed)
+├── train.py                  # toy / disks / denoiser / SAMI training entry points
+├── evaluate.py               # metrics (MIG, R² probe, kNN, cosine, PR)
+├── metrics_comparison.py     # paired SAMI-vs-β-VAE evaluation on the held-out split
+├── interactive_demo.ipynb    # inference-only demo (listen to a transfer inline)
 └── README.md
 ```
 
-Not in this repository (kept on the cluster): `checkpoints/` (model weights), `data/nsynth-train/` (raw audio), `data/mel_cache.npy` (7.6 GB cache), Singularity container, logs, archive of past experiments, and the full documentation (scientific report, diagnostics, phase notes — detailed in the project report PDF).
+Not in the repo (on the cluster): model checkpoints, raw NSynth audio, the ~7.6 GB mel cache, logs, and the Singularity container.
 
 ---
 
-## Pipeline (reproduction)
+## Reproducing the pipeline
 
-| Phase | What | Script | Duration |
-|-------|------|--------|----------|
-| **0 — Dataset** | Filter NSynth (4 families, pitch 48-84) | `data/download.sh` | — |
-| **0.5 — Normalization** | Global min-max constants | `python scripts/compute_norm_stats.py` | ~10 min |
-| **0.5 — Mel cache** | Pre-compute mels (removes I/O bottleneck) | `python scripts/precompute_mels.py` | ~1-2 h |
-| **1 — Toy** | Mechanism validation (sinusoids) | `python train.py --mode sami` | minutes |
-| **2 — Baseline** | β-VAE on NSynth (D=128, β=0.01) | `python train.py --mode vae-nsynth` | hours |
-| **2.7 — Disks gate** | 2D stack validation (3 factors) | `python train.py --mode sami --dataset disks` | minutes |
-| **3a — Denoiser** | Unconditional DDPM on NSynth | `sbatch scripts/train_denoiser_2d.slurm` | ~1 day |
-| **3a — DDIM gate** | Check plausible mels | `python scripts/ddim_gate.py` | minutes |
-| **3b — Encoder** | Frozen SAMI (D=32, β=1e-5, free bits) | `sbatch scripts/train_sami_encoder.slurm` | ~1 day |
-| **Demo** | Timbre transfer (s=5, α=0.3) | `python scripts/demo_fase2.py` | ~5 min |
-| **Figures** | 7 report figures | `bash scripts/run_report_figures.sh` | ~3 min |
+The order matters (normalization constants and the mel cache are built once and reused):
 
-**SLURM infrastructure:** 29-min jobs with auto-resume. Per-step checkpoints (every 1500 steps) guarantee that a job killed mid-epoch resumes from the latest step — without them training would never progress (one epoch exceeds the limit on some nodes).
+| Step | What it does | Command |
+|------|--------------|---------|
+| Dataset | filter NSynth to 4 families, pitch 48–84 | `bash data/download.sh` |
+| Norm stats | global min/max constants → `norm_stats.json` | `python scripts/compute_norm_stats.py` |
+| Mel cache | precompute mels (kills the I/O bottleneck) | `python scripts/precompute_mels.py` |
+| Denoiser (3a) | unconditional DDPM on NSynth | `sbatch scripts/train_denoiser_2d.slurm` |
+| Encoder (3b) | frozen-SAMI encoder (D=32, β=1e-5, free bits) | `sbatch scripts/train_sami_encoder.slurm` |
+| Metrics | paired SAMI vs β-VAE on the held-out test split | `python scripts/metrics_comparison.py` |
+| Demo | timbre transfer (s=5, α=0.3) | `python scripts/demo_fase2.py` |
+
+**A note on the cluster.** Jobs on the Sapienza cluster are capped at 29 minutes, and one training epoch can exceed that on some nodes. We save per-step checkpoints (every 1500 steps) and auto-resume mid-epoch — without this the training would never make progress. This constraint shaped a lot of the engineering (mel caching, batch size, checkpoint frequency).
 
 ---
 
-## Demo audio
+## The demo
 
-The sounds generated in the final demo are in **`plots/demo/`** — one WAV per condition:
+`plots/demo/` contains the generated audio, one WAV per condition, named `s{scale}_a{alpha}_seed{seed}_{A,B,T}.wav`:
+- `_A` — source note (guitar, MIDI 60), whose **timbre** we keep;
+- `_B` — target note (brass, MIDI 67), whose **pitch** we transfer;
+- `_T` — the transfer.
 
-- `_A.wav` — original note (guitar, MIDI 60)
-- `_B.wav` — target note (trumpet, MIDI 67)
-- `_T.wav` — **transfer** (pitch of B on the timbre of A)
-
-**The most significant (s=5, α=0.3):**
-
-| File | What it shows |
-|------|---------------|
-| [s5.0_a0.3_seed1006_T.wav](plots/demo/s5.0_a0.3_seed1006_T.wav) | **Perfect transfer** — pitch toward trumpet, guitar timbre preserved |
-| [s5.0_a0.3_seed1001_T.wav](plots/demo/s5.0_a0.3_seed1001_T.wav) | Shifted pitch, timbre preserved (with α=0.5 the timbre degraded) |
-| [s5.0_a0.3_seed1000_T.wav](plots/demo/s5.0_a0.3_seed1000_T.wav) | Failure: guidance does not move the pitch (T=A) |
-
-Full configurations (s∈{3,5,7} × α∈{0.3,0.5,0.7,1.0}, 8 seeds each) are organized by prefix `s{scale}_a{alpha}_seed{seed}_{A,B,T}.wav`.
-
-**Report figure** 
-See `plots/demo/` for the A/T/B audio of each case.
+The transfer works cleanly on some seeds and not others (e.g. `seed1006` succeeds, `seed1000` doesn't) — this is the frozen-regime limit described in the report, not a bug: the outcome depends on the initial noise x_T. `interactive_demo.ipynb` lets you run one transfer end-to-end and listen inline; it needs only the two checkpoints from the GitHub release (`model_final_denoiser.pt`, `model_final_sami.pt`).
 
 ---
 
-## Metrics and method (summary)
+## Setup
 
-- **R² probe (Ridge + split + noise control)** — how linearly decodable a factor is from the latent. The margin over the control is the primary metric.
-- **Classification accuracy** — the correct metric for timbre (categorical); Ridge R² on a categorical target is an artifact (0.29 → 0.91 with the right metric).
-- **Per-dimension KL** — distinguishes entanglement (information spread out) from disentanglement (few loaded dims).
-- **Cosine between generative directions** — factor orthogonality, interpreted against a random baseline.
-- **CREPE** — perceptual fundamental frequency for pitch (robust to harmonics and octave errors).
-
-Four measurement artifacts were discovered and fixed during the research — the measurement instrument is part of the experiment.
-
----
-
-## Method (the idea)
-
-In a classic VAE, a deterministic decoder compresses the latent in a single z→x pass, and an expressive decoder tends to ignore z (posterior collapse). **SAMI replaces the decoder with a pre-trained frozen diffusion model**: the encoder influences generation via the guidance gradient
-
-```
-ε̂(x_t, t, z) = ε_θ(x_t, t) − s · γ_t · g_t,      g_t = ∇_{x_t} log q_φ(z | x_t)
-```
-
-applied step-by-step during the reverse diffusion. The "decoder" is therefore the **guided denoiser** — an iterative generative process, not a network. This:
-
-1. removes the encoder/decoder competition at the root of posterior collapse,
-2. acts per **noise scale** (pitch emerges at high t, timbre at low t),
-3. gives the encoder a richer, more localized learning signal.
-
-Without labels, the learned latent is **linearly separable** in pitch and timbre (R² 0.60, accuracy 0.91) with **orthogonal** directions (cos = 0.15).
-
----
-
-## Interactive demo notebook
-
-**`interactive_demo.ipynb`** is a self-contained, inference-only notebook: it loads
-the two final checkpoints, performs the timbre transfer (guitar A + pitch of trumpet B)
-and lets you **listen** to the result inline. It needs no raw NSynth data — everything
-is packed in `data/demo_inference_data.npz` (already in the repo).
-
-To run it you need: PyTorch, torchaudio, matplotlib, scikit-learn (and optionally
-`torchcrepe` for the pitch measurements) plus the two `model_final.pt` checkpoints,
-which are **not pushed to this repo** — download them from the
-[GitHub release](https://github.com/Alegau03/progetto-deep/releases) and place them at:
-
-| Release asset | Rename to |
-|---|---|
-| `model_final_denoiser.pt` | `checkpoints/nsynth/denoiser_2d/model_final.pt` |
-| `model_final_sami.pt` | `checkpoints/nsynth/sami_d32/model_final.pt` |
-
-The markdown cells explain step by step what each cell does and what you should hear.
-
-The full pre-generated audio of every (s, α, seed) configuration is in `plots/demo/`.
-
----
-
-## Reproducibility
-
-- Python 3.12, PyTorch, `torchcrepe` (PyTorch port), HiFi-GAN / Griffin-Lim for audio, see `pyproject.toml` and `requirements.txt`
-- Training runs on the DI Sapienza SLURM cluster (RTX 6000, 29-min jobs, Singularity container, auto-resume)
-- Raw NSynth filtered to 4 families (guitar, keyboard, string, brass), MIDI pitch [48, 84], 61,531 samples, mel (1,128,256), global normalization to [-1,1]
-
-
----
+Python 3.12, PyTorch, torchaudio, scikit-learn, and `torchcrepe` for pitch estimation; Griffin-Lim (or HiFi-GAN) for mel→audio in the demo only. See `pyproject.toml` / `requirements.txt`. NSynth is filtered to 4 families (guitar, keyboard, string, brass), MIDI pitch [48, 84], mel shape (1, 128, 256), globally normalized to [−1, 1].
