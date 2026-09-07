@@ -1,7 +1,7 @@
 # SAMI-Audio
 
 **Porting SAMI (Score-based Autoencoder for Multiscale Inference) from images to audio.**
-## Antonio Pietro Romito (1932500) & Alessandro Gautieri (2041850) — Deep Learning & Applied AI 2025/26, Sapienza.
+## Antonio Pietro Romito ([@Romitoskj](https://github.com/Romitoskj)) & Alessandro Gautieri ([Alegau03](https://github.com/Alegau03)) — Deep Learning & Applied AI 2025/26, Sapienza.
 
 We take SAMI (Lyo, Simoncelli & Savin, 2025) and apply it to instrumental notes from NSynth (Engel et al., 2017).  
 The goal: learn a latent space that separates **pitch** from **timbre** *without any supervision on those factors*. The twist of SAMI, and the reason we chose it, is that there is **no decoder network**: the "decoder" is a frozen diffusion denoiser, and the encoder influences generation only through a guidance gradient. Disentanglement is meant to emerge from that score mechanism, not from a reconstruction bottleneck.
@@ -17,8 +17,6 @@ All metrics below are on the **held-out NSynth test split** (instrument-disjoint
 - The latent **does** encode pitch and timbre linearly and without supervision: pitch is linearly decodable (R² ≈ 0.88), timbre is recovered by a k-NN at **0.97** (chance 25%), and the pitch/timbre directions come out essentially **orthogonal** (|cos| ≈ 0.03 vs. 0.28 for the β-VAE).
 - Against the β-VAE, SAMI wins on the *separation-oriented* metrics (timbre, MIG-family, orthogonality). The β-VAE scores higher only on the raw pitch probe — but that reflects **more redundant pitch information**, not better disentanglement (its MIG is lower).
 - The honest limit: **generative pitch control is weak**. In the frozen-denoiser regime the guidance often can't overcome the initial sampling noise, so the timbre-transfer demo succeeds on roughly half the seeds. We characterize *why* rather than hide it.
-
-The single most useful lesson of the project: **most of our early "failures" were the measuring instrument, not the model.** We found and fixed four measurement artifacts (an unregularized probe giving fake R², a collapse guard reading the wrong KL, a categorical factor scored with the wrong metric, an FFT-peak pitch estimator returning harmonics). A validated metric was the precondition for every correct decision.
 
 ---
 
@@ -62,7 +60,7 @@ progetto-deep/
 └── README.md
 ```
 
-Not in the repo (on the cluster): model checkpoints, raw NSynth audio, the ~7.6 GB mel cache, logs, and the Singularity container.
+Not in the repo: model checkpoints, raw NSynth audio, the ~7.6 GB mel cache, logs, and the Singularity container.
 
 ---
 
@@ -75,12 +73,10 @@ The order matters (normalization constants and the mel cache are built once and 
 | Dataset | filter NSynth to 4 families, pitch 48–84 | `bash data/download.sh` |
 | Norm stats | global min/max constants → `norm_stats.json` | `python scripts/compute_norm_stats.py` |
 | Mel cache | precompute mels (kills the I/O bottleneck) | `python scripts/precompute_mels.py` |
-| Denoiser (3a) | unconditional DDPM on NSynth | `sbatch scripts/train_denoiser_2d.slurm` |
-| Encoder (3b) | frozen-SAMI encoder (D=32, β=1e-5, free bits) | `sbatch scripts/train_sami_encoder.slurm` |
+| Denoiser | unconditional DDPM on NSynth | `sbatch scripts/train_denoiser_2d.slurm` |
+| Encoder | frozen-SAMI encoder (D=32, β=1e-5, free bits) | `sbatch scripts/train_sami_encoder.slurm` |
 | Metrics | paired SAMI vs β-VAE on the held-out test split | `python scripts/metrics_comparison.py` |
 | Demo | timbre transfer (s=5, α=0.3) | `python scripts/demo_fase2.py` |
-
-**A note on the cluster.** Jobs on the Sapienza cluster are capped at 29 minutes, and one training epoch can exceed that on some nodes. We save per-step checkpoints (every 1500 steps) and auto-resume mid-epoch — without this the training would never make progress. This constraint shaped a lot of the engineering (mel caching, batch size, checkpoint frequency).
 
 ---
 
