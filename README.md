@@ -1,6 +1,7 @@
 # SAMI-Audio
 
-**Porting SAMI (Score-based Autoencoder for Multiscale Inference) from images to audio.**
+**Porting [SAMI](https://arxiv.org/abs/2512.17127) (Score-based Autoencoder for Multiscale Inference) from images to audio.**
+
 ## Antonio Pietro Romito ([@Romitoskj](https://github.com/Romitoskj)) & Alessandro Gautieri ([Alegau03](https://github.com/Alegau03)) — Deep Learning & Applied AI 2025/26, Sapienza.
 
 We take SAMI (Lyo, Simoncelli & Savin, 2025) and apply it to instrumental notes from NSynth (Engel et al., 2017).  
@@ -10,7 +11,7 @@ This repo is the code and the artifacts behind our report; the report itself has
 
 ---
 
-## What we found (short version)
+## What we found
 
 All metrics below are on the **held-out NSynth test split** (instrument-disjoint from training), computed with the *same* probes on both SAMI and a β-VAE baseline retrained at D=32 for a fair comparison.
 
@@ -20,7 +21,7 @@ All metrics below are on the **held-out NSynth test split** (instrument-disjoint
 
 ---
 
-## How it works (the mechanism)
+## How it works
 
 A classic VAE pushes the latent through a deterministic decoder in one shot, and a strong decoder learns to ignore the latent (posterior collapse). SAMI removes that decoder entirely:
 
