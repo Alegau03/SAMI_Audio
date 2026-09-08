@@ -42,20 +42,41 @@ def norm_to_log(mel):
 
 # ---------------------------------------------------------------- fig1
 def fig1_denoiser_gate():
+    # 3 rows: real NSynth mel (input) | DDIM sample (output)
     path = "plots/finals/samples.npy"
     if not os.path.isfile(path):
         print("  [fig1] SKIP: samples.npy non trovato")
         return
-    x0 = np.load(path)  # (10,1,128,256) in [-1,1]
-    n = min(6, len(x0))
-    fig, axes = plt.subplots(2, 3, figsize=(12, 6))
-    for i in range(n):
-        ax = axes[i // 3][i % 3]
-        mel = norm_to_log(x0[i, 0])
-        ax.imshow(mel, aspect="auto", origin="lower", cmap="magma")
-        ax.set_title(f"sample {i}")
-        ax.set_xticks([]); ax.set_yticks([])
-    fig.suptitle("DDIM sampling dal denoiser (Gate 3a) — struttura armonica")
+    from data.nsynth import CachedMelDataset
+    ds = CachedMelDataset()
+    metas = ds.metas
+
+    def find(family, pitch):
+        for i, m in enumerate(metas):
+            if m["instrument_family"] == family and m["pitch"] == pitch:
+                return i
+
+    REFS = [("guitar", 60), ("brass", 67), ("keyboard", 60)]
+    reals = []
+    for fam, pit in REFS:
+        i = find(fam, pit)
+        reals.append(np.asarray(ds.arr[i]).copy())   # (1,128,256) in [-1,1]
+
+    x0 = np.load(path)  # (10,1,128,256) DDIM samples in [-1,1]
+    n = min(3, len(x0))
+    fig, axes = plt.subplots(n, 2, figsize=(9, 9))
+    for r in range(n):
+        axes[r][0].imshow(norm_to_log(reals[r][0]), aspect="auto",
+                          origin="lower", cmap="magma")
+        axes[r][1].imshow(norm_to_log(x0[r, 0]), aspect="auto",
+                          origin="lower", cmap="magma")
+        axes[r][0].set_xticks([]); axes[r][0].set_yticks([])
+        axes[r][1].set_xticks([]); axes[r][1].set_yticks([])
+        axes[r][0].set_ylabel(f"{REFS[r][0]} MIDI {REFS[r][1]}",
+                              fontsize=9, rotation=90, labelpad=30)
+    axes[0][0].set_title("input: real NSynth mel")
+    axes[0][1].set_title("output: DDIM sample")
+    fig.suptitle("DDIM sampling from the denoiser — real vs generated")
     fig.tight_layout()
     fig.savefig(os.path.join(OUT, "fig1_denoiser_gate.png"), dpi=130)
     plt.close(fig)
