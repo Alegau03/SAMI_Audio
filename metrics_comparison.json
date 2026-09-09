@@ -1,0 +1,100 @@
+{
+  "sami": {
+    "D": 32,
+    "probe_r2_pitch": {
+      "margin_mean_5seeds": 0.8769549205391793,
+      "margin_std_5seeds": 0.025317862413430096,
+      "control_mean_5seeds": -0.07553024533488761,
+      "per_seed": {
+        "0": 0.8754815987844128,
+        "1": 0.8627103892042363,
+        "2": 0.8639812268014393,
+        "3": 0.8565158245618527,
+        "4": 0.9260855633439564
+      }
+    },
+    "knn_timbre": {
+      "accuracy_mean_5seeds": 0.9701863354037267,
+      "accuracy_std_5seeds": 0.0046480215984769264,
+      "k": 5,
+      "chance": 0.25,
+      "per_seed": {
+        "0": 0.9772256728778468,
+        "1": 0.9710144927536232,
+        "2": 0.9710144927536232,
+        "3": 0.968944099378882,
+        "4": 0.9627329192546584
+      }
+    },
+    "mig": {
+      "mig_pitch": 0.00559404403783261,
+      "mig_family": 0.10221257780028621,
+      "positive_control": {
+        "pitch": 0.835583234811917,
+        "family": 0.9014607482032014
+      }
+    },
+    "participation_ratio": {
+      "PR": 9.569360284263452,
+      "PR_norm": 0.29904250888323286
+    },
+    "cos_sep": {
+      "cos(wp,wf)": -0.03412136808037758,
+      "abs_cos(wp,wf)": 0.03412136808037758
+    }
+  },
+  "bvae": {
+    "D": 32,
+    "probe_r2_pitch": {
+      "margin_mean_5seeds": 0.9071321284446976,
+      "margin_std_5seeds": 0.020609742534391046,
+      "control_mean_5seeds": -0.07553024533488761,
+      "per_seed": {
+        "0": 0.9006878648413006,
+        "1": 0.8974381161039908,
+        "2": 0.9030963392687417,
+        "3": 0.8874826432024474,
+        "4": 0.9469556788070074
+      }
+    },
+    "knn_timbre": {
+      "accuracy_mean_5seeds": 0.813664596273292,
+      "accuracy_std_5seeds": 0.02312917605593202,
+      "k": 5,
+      "chance": 0.25,
+      "per_seed": {
+        "0": 0.7846790890269151,
+        "1": 0.84472049689441,
+        "2": 0.7908902691511387,
+        "3": 0.8157349896480331,
+        "4": 0.8322981366459627
+      }
+    },
+    "mig": {
+      "mig_pitch": 0.026760100176396188,
+      "mig_family": 0.04144196526811502,
+      "positive_control": {
+        "pitch": 0.835583234811917,
+        "family": 0.9014607482032014
+      }
+    },
+    "participation_ratio": {
+      "PR": 10.829267553867057,
+      "PR_norm": 0.3384146110583455
+    },
+    "cos_sep": {
+      "cos(wp,wf)": 0.2745697796344757,
+      "abs_cos(wp,wf)": 0.2745697796344757
+    }
+  },
+  "cos_random_baseline": {
+    "D=32": {
+      "mean": 0.14240136677445847,
+      "std": 0.1047251158654943,
+      "mean3std": 0.4565767143709414
+    }
+  },
+  "heldout_structure": {
+    "note": "NSynth test split structural caveat: instrument-disjoint from train (0 shared), but only 26 instruments (7-58 samples each, median 41) vs 379 in the filtered train set -> timbre classes ~15x more compact and less residual timbre variance for the pitch probe. Robustness: probe R^2 and kNN reported as mean+/-std over 5 stratified seeds; leakage check: 0 shared samples, 0 shared instruments."
+  }
+}
