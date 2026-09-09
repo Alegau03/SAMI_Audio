@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Gate di qualità 3a: DDIM sampling incondizionato dal denoiser pre-addestrato.
+Qualità del denoiser: DDIM sampling incondizionato dal denoiser pre-addestrato.
 Genera sample, li de-normalizza, salva PNG e audio WAV per ispezione.
 """
 import os, sys, json, torch
@@ -34,9 +34,9 @@ def denormalize(mel):
 def main():
     """Genera campioni DDIM dal denoiser e li salva come PNG + WAV.
 
-    Verifica il Gate 3a: il denoiser deve produrre mel con struttura
+    Verifica la qualità del denoiser: deve produrre mel con struttura
     armonica (fondamentale + armoniche) e pitch definito, condizione
-    necessaria per una guidance sensata in Phase 3b.
+    necessaria per una guidance sensata nel training dell'encoder.
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[INFO] Device: {device}")

@@ -2,8 +2,7 @@
 """
 SAMI-Audio — Train a clean D=32 beta-VAE on the global mel cache
 ==================================================================
-Protocol option 1 (docs/SAMI_Audio_Metriche_Confronto.md Sec. 5): the
-head-to-head with SAMI is valid only if the beta-VAE sees the SAME data
+The head-to-head with SAMI is valid only if the beta-VAE sees the SAME data
 (global-normalized mels), the SAME encoder architecture (current MelEncoder,
 flatten — no legacy pooling) and the SAME latent dimension (D=32).
 
@@ -12,7 +11,7 @@ This script trains exactly that baseline:
   - encoder:   MelEncoder D=32 (same class/weights layout as SAMI's encoder)
   - decoder:   MelDecoder D=32
   - loss:      MSE reconstruction + beta * KL  (beta fixed, no warm-up)
-  - hyper:     batch 128, lr 1e-4, cosine annealing (Phase-2 values)
+  - hyper:     batch 128, lr 1e-4, cosine annealing (same values as the other NSynth runs)
   - resume:    auto-resume from the latest checkpoint in CKPT_DIR
                (per-epoch saves; one epoch is ~1-2 min on GPU, well below
                the 29-min SLURM limit)

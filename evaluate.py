@@ -1,8 +1,8 @@
 """
-SAMI-Audio — Evaluate (Phase 1 & 2)
-====================================
-Phase 1: Toy model evaluation — MIG + scatter plot + Gate 1.
-Phase 2: NSynth evaluation — TAD, DCI, MIG, FactorVAE, FID, SI-SNR, log-mel L1.
+SAMI-Audio — Evaluate
+=====================
+Toy model evaluation: MIG + scatter plot + disentanglement check.
+NSynth evaluation: TAD, DCI, MIG, FactorVAE, FID, SI-SNR, log-mel L1.
 
 Usage:
     .venv/bin/python evaluate.py --checkpoint checkpoints/toy/model_final.pt
@@ -297,17 +297,17 @@ def evaluate_toy(checkpoint_path: str, output_dir: str = "plots") -> dict:
     else:
         print(f"[WARN]  Latent dim = {config['latent_dim']}, skipping 2D scatter (only works for D=2)")
 
-    # ---- Gate 1 --------------------------------------------------------------
+    # ---- Disentanglement check -----------------------------------------------
     results = {"mig_freq": mig_freq, "mig_amp": mig_amp}
 
     print()
     print("=" * 60)
     if mig_freq > 0.5 and mig_amp > 0.5:
-        print("  GATE 1: PASSED")
+        print("  DISENTANGLEMENT: PASSED")
         print(f"  MIG freq = {mig_freq:.3f} > 0.5, MIG amp = {mig_amp:.3f} > 0.5")
-        print("  Disentanglement funziona. Pronto per Phase 2 (β-VAE su NSynth).")
+        print("  Disentanglement funziona. Pronto per il β-VAE su NSynth.")
     else:
-        print("  GATE 1: FAILED")
+        print("  DISENTANGLEMENT: FAILED")
         print(f"  MIG freq = {mig_freq:.3f}, MIG amp = {mig_amp:.3f}")
         if mode == "vae":
             print("  Controlla l'encoder (Half-UNet) e il valore di β")

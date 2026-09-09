@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SAMI vs beta-VAE — paired metric comparison (protocol: docs/SAMI_Audio_Metriche_Confronto.md)
+SAMI vs beta-VAE — paired metric comparison
 
 One function per metric, applied to BOTH encoders on the SAME samples
 (fixed index set, seed 0). Metrics operate on mu (posterior mean):
@@ -11,7 +11,7 @@ One function per metric, applied to BOTH encoders on the SAME samples
   cos(w_pitch, w_family) — intervention directions in standardized latent space
   random cosine baseline (per latent dimension D)
 
-Clean comparison (protocol option 1): the beta-VAE baseline was retrained on
+Clean comparison: the beta-VAE baseline was retrained on
 the SAME global-normalized mel cache as SAMI, with the SAME encoder class
 (current MelEncoder, flatten) and the SAME latent dimension D=32
 (scripts/train_vae_d32.py). Both checkpoints below load with the same

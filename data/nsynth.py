@@ -4,14 +4,14 @@ SAMI-Audio — NSynth Dataset Module
 PyTorch Dataset for loading, preprocessing, and filtering the NSynth dataset.
 
 Provides mel-spectrogram extraction from raw .wav files with fixed preprocessing
-parameters (see CONVENTIONS.md, Nodo 1).
+parameters.
 
 Usage:
     dataset = NSynthDataset(root="data/nsynth-train")
     mel, meta = dataset[0]        # mel: (1, 128, 256) in [-1, 1]
     audio = mel_to_audio(mel)     # Griffin-Lim reconstruction
 
-Gate 0 Sanity Check:
+Dataset sanity check:
     python -m data.nsynth         # runs from project root
     pdm run gate0                 # via PDM script alias
 """
@@ -65,7 +65,7 @@ class MelConfig:
     """
     Immutable configuration for mel-spectrogram preprocessing.
 
-    All parameters are fixed per CONVENTIONS.md, Nodo 1.
+    All parameters are fixed.
     Shape invariant: output is always (1, n_mels, n_frames) = (1, 128, 256).
     """
 
@@ -419,12 +419,12 @@ def mel_to_audio(
 
 
 # ===========================================================================
-# Gate 0 — Sanity Check
+# Dataset sanity check
 # ===========================================================================
 
 if __name__ == "__main__":
     """
-    Gate 0: Validates the full preprocessing pipeline.
+    Sanity check: validates the full preprocessing pipeline.
 
     Checks:
       1. Dataset loads without errors
@@ -437,7 +437,7 @@ if __name__ == "__main__":
     root = sys.argv[1] if len(sys.argv) > 1 else "data/nsynth-train"
 
     print("=" * 60)
-    print("  SAMI-Audio — Gate 0: Dataset Sanity Check")
+    print("  SAMI-Audio — Dataset Sanity Check")
     print("=" * 60)
     print()
 
@@ -498,13 +498,13 @@ if __name__ == "__main__":
     # Final verdict
     if shape_errors == 0 and range_errors == 0:
         print("=" * 60)
-        print("  GATE 0: PASSED")
+        print("  SANITY CHECK: PASSED")
         print("=" * 60)
         print()
-        print("  Dataset is ready. Next step: Phase 1 — Toy Model")
+        print("  Dataset is ready.")
     else:
         print("=" * 60)
-        print("  GATE 0: FAILED")
+        print("  SANITY CHECK: FAILED")
         print("=" * 60)
         sys.exit(1)
 

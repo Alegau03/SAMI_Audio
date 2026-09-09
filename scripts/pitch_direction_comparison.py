@@ -2,8 +2,7 @@
 """
 Pitch-direction correlation corr(k, f0) — SAMI vs beta-VAE
 ============================================================
-Replicates the Test-B-v2 procedure (archive/scripts/diagnostics/testB_v2.py)
-on BOTH models with the SAME protocol:
+Runs the same procedure on BOTH models with the SAME setup:
 
   1. mu over 8000 reference samples (seed 42) from the model's own encoder;
   2. standardization + intervention direction w_pitch = top-minus-bottom

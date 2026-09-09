@@ -1,9 +1,9 @@
 """
-SAMI-Audio — VAE Module (Phase 1: β-VAE Baseline)
-===================================================
+SAMI-Audio — VAE Module (β-VAE Baseline)
+==========================================
 Standard β-VAE with 1D encoder (Half-UNet) and 1D transposed-conv decoder.
 
-Used in Phase 1 to validate the encoder, training loop, MIG evaluation,
+Used to validate the encoder, training loop, MIG evaluation,
 and disentanglement pipeline on synthetic sinusoids before scaling to NSynth.
 """
 

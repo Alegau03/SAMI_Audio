@@ -1,12 +1,13 @@
 """
-SAMI-Audio — Train (Phase 1 & 2)
-=================================
-Phase 1: Toy model training (SAMI or β-VAE on synthetic sinusoids).
-Phase 2: β-VAE baseline training on NSynth mel-spectrograms.
+SAMI-Audio — Training entry points
+==================================
+Covers toy model training (SAMI or β-VAE on synthetic sinusoids), the β-VAE
+baseline on NSynth mel-spectrograms, and the two-stage SAMI pipeline
+(unconditional denoiser pre-training, then the encoder with frozen denoiser).
 
 Usage:
-    .venv/bin/python train.py --mode vae                     # Phase 1: β-VAE toy
-    .venv/bin/python train.py --mode vae-nsynth              # Phase 2: β-VAE NSynth
+    .venv/bin/python train.py --mode vae                     # β-VAE toy
+    .venv/bin/python train.py --mode vae-nsynth              # β-VAE NSynth
 """
 
 from __future__ import annotations
@@ -101,7 +102,7 @@ class SinusoidDataset(Dataset):
 
 
 # ---------------------------------------------------------------------------
-# Disks dataset: 2D synthetic images (SAMI paper §4.1, 3 factors)
+# Disks dataset: 2D synthetic images (3 factors)
 # ---------------------------------------------------------------------------
 
 def generate_disks_dataset(
@@ -424,7 +425,7 @@ def train_vae(config: dict) -> tuple[BetaVAE, dict]:
 
 
 # ---------------------------------------------------------------------------
-# NSynth β-VAE training (Phase 2 baseline)
+# NSynth β-VAE training (baseline)
 # ---------------------------------------------------------------------------
 
 def train_vae_nsynth(config: dict) -> tuple[BetaVAE, dict]:
@@ -606,7 +607,7 @@ def train_vae_nsynth(config: dict) -> tuple[BetaVAE, dict]:
 
 
 # ---------------------------------------------------------------------------
-# Phase 3a — Denoiser pre-training on NSynth (2D, unconditional DDPM)
+# Denoiser pre-training on NSynth (2D, unconditional DDPM)
 # ---------------------------------------------------------------------------
 
 def pretrain_denoiser_2d(config: dict) -> MelUNet:
@@ -702,14 +703,14 @@ def pretrain_denoiser_2d(config: dict) -> MelUNet:
 
 
 # ---------------------------------------------------------------------------
-# Phase 3b — SAMI encoder training on NSynth (denoiser frozen)
+# SAMI encoder training on NSynth (denoiser frozen)
 # ---------------------------------------------------------------------------
 
 def _probe_r2(encoder, cache_arr, metas, device, n: int = 2000, seed: int = 42) -> dict:
     """
     Linear probe R² of mu onto pitch and instrument_family on a fixed subset.
 
-    Used for early stopping in Phase 3b. Uses an internal train/test split
+    Used for early stopping. Uses an internal train/test split
     (fit on half, score on the held-out half) AND Ridge regularization:
     with D=128 latent dims and near-constant mu (collapsed posterior), a
     plain LinearRegression inflates R² via huge coefficients (overfitting).
@@ -1029,7 +1030,7 @@ def train_sami_nsynth(config: dict) -> tuple[SAMI, dict]:
 
 
 # ---------------------------------------------------------------------------
-# Disks training (Phase 3 pre-gate: 2D synthetic, 3 factors)
+# Disks training (2D synthetic, 3 factors)
 # ---------------------------------------------------------------------------
 
 def train_disks(config: dict) -> tuple[SAMI, dict]:
@@ -1359,7 +1360,7 @@ def main() -> None:
     parser.add_argument("--num-workers", type=int, default=2,
                         help="DataLoader workers")
     parser.add_argument("--pretrain-denoiser-2d", action="store_true",
-                        help="Phase 3a: pre-train MelUNet on NSynth")
+                        help="Pre-train MelUNet on NSynth")
     parser.add_argument("--denoiser-checkpoint", type=str, default=None,
                         help="Path to pre-trained denoiser for SAMI encoder")
     parser.add_argument("--denoiser-channels", type=int, default=128,
@@ -1367,25 +1368,25 @@ def main() -> None:
     parser.add_argument("--oversample-t", action="store_true",
                         help="Oversample high timesteps (Beta(2,1)) for frozen denoiser")
     parser.add_argument("--amp", action="store_true",
-                        help="Phase 3b: mixed precision bf16 autocast for encoder+guidance")
+                        help="Mixed precision bf16 autocast for encoder+guidance")
     parser.add_argument("--probe-every", type=int, default=5,
-                        help="Phase 3b: linear probe R²(mu→pitch) every N epochs (0=off)")
+                        help="Linear probe R²(mu→pitch) every N epochs (0=off)")
     parser.add_argument("--probe-size", type=int, default=1000,
-                        help="Phase 3b: samples used by the linear probe")
+                        help="Samples used by the linear probe")
     parser.add_argument("--early-stop-patience", type=int, default=0,
-                        help="Phase 3b: stop if R²(pitch) plateaus over N probes (0=off)")
+                        help="Stop if R²(pitch) plateaus over N probes (0=off)")
     parser.add_argument("--collapse-thresh", type=float, default=0.05,
-                        help="Phase 3b: stop if mean L_z drops below this (posterior collapse)")
+                        help="Stop if mean L_z drops below this (posterior collapse)")
     parser.add_argument("--print-t-hist", action="store_true",
-                        help="Phase 3b: print t distribution of first batch (oversample check)")
+                        help="Print t distribution of first batch (oversample check)")
     parser.add_argument("--warmup-epochs", type=int, default=0,
-                        help="Phase 3b: KL warm-up — beta=0 for N epochs, then ramp")
+                        help="KL warm-up — beta=0 for N epochs, then ramp")
     parser.add_argument("--ramp-epochs", type=int, default=0,
-                        help="Phase 3b: linear beta ramp duration after warmup")
+                        help="Linear beta ramp duration after warmup")
     parser.add_argument("--free-bits", type=float, default=0.0,
-                        help="Phase 3b: per-dimension KL free budget in nats (0=standard KL)")
+                        help="Per-dimension KL free budget in nats (0=standard KL)")
     parser.add_argument("--ckpt-every-steps", type=int, default=0,
-                        help="Phase 3b: save mid-epoch checkpoint every N steps (0=off). "
+                        help="Save mid-epoch checkpoint every N steps (0=off). "
                              "Needed because an epoch (~31 min) can exceed the 29-min SLURM limit")
     parser.add_argument("--dataset", type=str, default="toy", choices=["toy", "nsynth", "disks"],
                         help="Dataset: toy (sinusoids), nsynth, or disks (2D, 3 factors)")
@@ -1439,7 +1440,7 @@ def main() -> None:
 
     if args.pretrain_denoiser_only:
         print("=" * 60)
-        print("  SAMI-Audio — Phase 1a: Denoiser Pre-Training")
+        print("  SAMI-Audio — Denoiser Pre-Training")
         print("=" * 60)
         for k, v in config.items():
             print(f"  {k:<20} = {v}")
@@ -1448,7 +1449,7 @@ def main() -> None:
 
     if args.mode == "vae":
         print("=" * 60)
-        print("  SAMI-Audio — Phase 1: β-VAE Toy Model Training")
+        print("  SAMI-Audio — β-VAE Toy Model Training")
         print("=" * 60)
         for k, v in config.items():
             print(f"  {k:<20} = {v}")
@@ -1457,7 +1458,7 @@ def main() -> None:
 
     if args.mode == "vae-nsynth":
         print("=" * 60)
-        print("  SAMI-Audio — Phase 2: β-VAE NSynth Training")
+        print("  SAMI-Audio — β-VAE NSynth Training")
         print("=" * 60)
         for k, v in config.items():
             print(f"  {k:<20} = {v}")
@@ -1467,14 +1468,14 @@ def main() -> None:
     if args.mode == "sami-nsynth":
         if args.pretrain_denoiser_2d:
             print("=" * 60)
-            print("  SAMI-Audio — Phase 3a: Denoiser Pre-Training")
+            print("  SAMI-Audio — Denoiser Pre-Training")
             print("=" * 60)
             for k, v in config.items():
                 print(f"  {k:<20} = {v}")
             pretrain_denoiser_2d(config)
         else:
             print("=" * 60)
-            print("  SAMI-Audio — Phase 3b: SAMI Encoder Training")
+            print("  SAMI-Audio — SAMI Encoder Training")
             print("=" * 60)
             for k, v in config.items():
                 print(f"  {k:<20} = {v}")
@@ -1482,14 +1483,14 @@ def main() -> None:
         return
 
     print("=" * 60)
-    print("  SAMI-Audio — Phase 1: Toy Model Training")
+    print("  SAMI-Audio — Toy Model Training")
     print("=" * 60)
     for k, v in config.items():
         print(f"  {k:<20} = {v}")
 
     if args.mode == "sami" and args.dataset == "disks":
         print("=" * 60)
-        print("  SAMI-Audio — Gate 1: Disks Dataset (2D)")
+        print("  SAMI-Audio — Disks Dataset (2D)")
         print("=" * 60)
         for k, v in config.items():
             print(f"  {k:<20} = {v}")

@@ -1,15 +1,15 @@
 """
 SAMI-Audio — U-Net Denoiser
 =============================
-1D U-Net denoiser for the toy sinusoid model (Phase 1).
-2D U-Net denoiser for mel-spectrogram denoising (Phase 3).
+1D U-Net denoiser for the toy sinusoid model.
+2D U-Net denoiser for mel-spectrogram denoising.
 
 Architecture: N down blocks, mid, N up blocks with skip connections.
 Sinusoidal time embeddings are injected into every ResBlock.
 
 References:
-    ToyUNet: 1D convolutions on 1D signals (Phase 1).
-    MelUNet: 2D convolutions on mel spectrograms (Phase 3, CONVENTIONS.md).
+    ToyUNet: 1D convolutions on 1D signals.
+    MelUNet: 2D convolutions on mel spectrograms.
 """
 
 from __future__ import annotations
@@ -183,7 +183,7 @@ class ToyUNet(nn.Module):
 
 
 # ---------------------------------------------------------------------------
-# 2D ResBlock for MelUNet (Phase 3)
+# 2D ResBlock for MelUNet
 # ---------------------------------------------------------------------------
 
 class ResBlock2D(nn.Module):
@@ -222,7 +222,7 @@ class ResBlock2D(nn.Module):
 
 
 # ---------------------------------------------------------------------------
-# 2D U-Net for mel-spectrogram denoising (Phase 3)
+# 2D U-Net for mel-spectrogram denoising
 # ---------------------------------------------------------------------------
 
 class MelUNet(nn.Module):
@@ -230,7 +230,7 @@ class MelUNet(nn.Module):
     2D U-Net denoiser for mel-spectrogram denoising (DDPM).
 
     Architecture: 4 down levels, mid with self-attention, 4 up levels.
-    Follows CONVENTIONS.md: base_channels=128, channel_mult=(1,1,2,2).
+    base_channels=128, channel_mult=(1,1,2,2).
 
     Parameters
     ----------

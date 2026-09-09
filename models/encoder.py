@@ -7,8 +7,8 @@ posterior q_φ(z|x) = N(μ_φ(x), Σ_φ(x)).
 The Half-UNet uses only the Down + Mid blocks of a U-Net — no
 upsampling path. Two linear heads produce μ and σ².
 
-For Phase 1 (toy model): 1D convolutions on 1D signals.
-For Phase 3 (NSynth): 2D convolutions on mel spectrograms.
+For the toy model: 1D convolutions on 1D signals.
+For NSynth: 2D convolutions on mel spectrograms.
 """
 
 from __future__ import annotations

@@ -145,7 +145,7 @@ def fig2_collapse_betas():
 
 # ---------------------------------------------------------------- fig3
 def fig3_guidance_by_t():
-    # Valori dal documento Phase3.md §11.4 (diagnosi stratificata, encoder fresco)
+    # Valori della diagnosi stratificata su encoder fresco
     bands = ["0-250", "250-500", "500-750", "750-1000"]
     delta = [0.4, 21.4, 116.1, 407.7]  # Δ% guidato vs uncond
     fig, ax = plt.subplots(figsize=(7, 4))

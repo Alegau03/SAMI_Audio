@@ -17,7 +17,7 @@ def main(root: str = "data/nsynth-train", out: str = "data/norm_stats.json"):
 
     La normalizzazione globale usa due costanti fisse (robuste agli outlier)
     invece della normalizzazione per-sample, che distruggeva la dinamica
-    relativa tra campioni (vedi docs/preprocessing.md).
+    relativa tra campioni.
 
     Parameters
     ----------

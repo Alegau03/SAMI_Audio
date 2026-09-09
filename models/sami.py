@@ -198,7 +198,7 @@ class SAMI(nn.Module):
         guided loss on the same batch/t/noise). Otherwise samples fresh
         from the same distribution as forward.
 
-        Baseline for the "guidance helps" test in Phase 3b: if the guided
+        Baseline for the "guidance helps" test during training: if the guided
         L_x is not below this, the encoder is decorative (case 2 in the
         diagnostics — the encoder receives no useful gradient from the
         guidance, so any beta crushes it toward the prior).
